@@ -2,16 +2,18 @@ import pool from '../db/db.js';
 import bcrypt from 'bcryptjs';
 
 export const createUser = async (name, email, password) => {
+  const normalizedEmail = email.trim().toLowerCase();
   const hashedPassword = await bcrypt.hash(password, 10);
   const result = await pool.query(
     'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-    [name, email, hashedPassword, 'viewer']
+    [name, normalizedEmail, hashedPassword, 'viewer']
   );
   return result.rows[0];
 };
 
 export const getUserByEmail = async (email) => {
-  const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
   return result.rows[0];
 };
 
