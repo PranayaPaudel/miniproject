@@ -1,0 +1,89 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
+import FolderTree from '../components/FolderTree';
+import '../styles/dashboard.css';
+
+export default function ProjectDetails() {
+  const { id } = useParams();
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadProject();
+  }, [id]);
+
+  const loadProject = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getProjectById(id);
+      setProject(data);
+    } catch (err) {
+      setMessage('Failed to load project');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpvote = async () => {
+    try {
+      const result = await api.upvoteProject(id);
+      setProject(result.project);
+      setMessage('✓ Upvoted!');
+    } catch (err) {
+      setMessage('Failed to upvote');
+    }
+  };
+
+  if (loading) return <div className="page-container"><p>Loading project...</p></div>;
+  if (!project) return <div className="page-container"><p>Project not found</p></div>;
+
+  const priceNum = parseFloat(project.price);
+  const price = isNaN(priceNum) ? 0 : priceNum;
+  const upvotes = project.upvotes || 0;
+
+  return (
+    <div className="page-container">
+      <button onClick={() => navigate('/')} className="btn-back">← Back to Projects</button>
+
+      <div className="project-details">
+        <div className="details-header">
+          <h1>{project.title}</h1>
+          <span className="upvote-badge">⬆️ {upvotes} upvotes</span>
+        </div>
+
+        <p className="details-description">{project.description}</p>
+
+        <div className="details-meta">
+          <div className="meta-item">
+            <strong>Tech Stack:</strong> {project.tech_stack}
+          </div>
+          <div className="meta-item">
+            <strong>Price:</strong> ${price.toFixed(2)}
+          </div>
+          <div className="meta-item">
+            <strong>GitHub:</strong>
+            <a href={project.github_link} target="_blank" rel="noopener noreferrer" className="github-link">
+              View Repository
+            </a>
+          </div>
+        </div>
+
+        <div className="details-actions">
+          <button onClick={handleUpvote} className="btn-upvote">👍 Upvote ({upvotes})</button>
+          <button className="btn-buy">💳 Buy Now</button>
+        </div>
+
+        {project.structure && (
+          <div className="folder-structure">
+            <FolderTree structure={project.structure} />
+          </div>
+        )}
+      </div>
+
+      {message && <div className="info-message">{message}</div>}
+    </div>
+  );
+}
