@@ -33,13 +33,14 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
     // Check if admin login
-    if (email === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+    if (normalizedEmail === ADMIN_CREDENTIALS.username.toLowerCase() && password === ADMIN_CREDENTIALS.password) {
       const token = jwt.sign(
         { id: 'admin', email: ADMIN_CREDENTIALS.username, role: 'admin' },
         process.env.JWT_SECRET,
@@ -48,7 +49,7 @@ export const login = async (req, res) => {
       return res.json({ message: 'Admin login successful', token, user: { id: 'admin', email: ADMIN_CREDENTIALS.username, role: 'admin' } });
     }
 
-    const user = await userModel.getUserByEmail(email);
+    const user = await userModel.getUserByEmail(normalizedEmail);
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -58,13 +59,15 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    const normalizedRole = user.role?.trim().toLowerCase();
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: normalizedRole },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    res.json({ message: 'Login successful', token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.json({ message: 'Login successful', token, user: { id: user.id, name: user.name, email: user.email, role: normalizedRole } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Server error' });

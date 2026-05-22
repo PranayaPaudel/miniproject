@@ -284,6 +284,7 @@
 
 .folder-toggle:hover {
   color: var(--primary-dark);
+  transform: scale(1.05);
 }
 
 .file-item {
